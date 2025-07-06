@@ -17,4 +17,6 @@ pub struct Cli {
     pub allow_dirty: bool,
     #[arg(long, help = "Exclude specific crate not to publish")]
     pub exclude: Vec<String>,
+    #[arg(long, help = "Show detailed logs")]
+    pub verbose: bool,
 }

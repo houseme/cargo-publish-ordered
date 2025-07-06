@@ -2,7 +2,7 @@
 name = "cargo-publish-ordered"
 version = "0.1.0"
 edition = "2024"
-license = "Apache-2.0 or MIT"
+license = "Apache-2.0"
 repository = "https://github.com/houseme/cargo-publish-ordered"
 rust-version = "1.85"
 homepage = "https://houseme.github.io/cargo-publish-ordered/"
@@ -14,8 +14,10 @@ cargo_metadata = "0.18"
 clap = { version = "4.5", features = ["derive"] }
 colored = "2.1"
 dialoguer = "0.11"
+indicatif = "0.18.0"
 petgraph = "0.6"
 thiserror = "2.0"
+
 
 [profile.release]
 opt-level = 3
