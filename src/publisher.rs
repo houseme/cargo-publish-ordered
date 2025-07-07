@@ -1,6 +1,6 @@
 use crate::error::Error;
 use colored::Colorize;
-use dialoguer::{Confirm, theme::ColorfulTheme};
+use dialoguer::{theme::ColorfulTheme, Confirm};
 use indicatif::{ProgressBar, ProgressStyle};
 use rayon::prelude::*;
 use std::process::Command;
@@ -99,7 +99,10 @@ impl Publisher {
                 } else {
                     let stderr = String::from_utf8_lossy(&output.stderr);
                     pb.abandon_with_message(format!("Publish {} failed", pkg.name));
-                    Err(Error::Publish(pkg.name.clone(), stderr.to_string()))
+                    Err(Error::Publish(
+                        pkg.name.clone().to_string(),
+                        stderr.to_string(),
+                    ))
                 }
             })
             .collect::<Vec<_>>();

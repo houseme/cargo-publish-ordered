@@ -1,6 +1,6 @@
 [package]
 name = "cargo-publish-ordered"
-version = "0.2.0"
+version = "0.3.0"
 edition = "2024"
 license = "Apache-2.0"
 authors = ["Houseme <housemecn@gmail.com>"]
@@ -12,15 +12,15 @@ description = "A Cargo plugin to ensure that dependencies are published in a spe
 readme = "README.md"
 
 [dependencies]
-cargo_metadata = "0.18"
-clap = { version = "4.5", features = ["derive", "env"] }
-colored = "2.1"
+cargo_metadata = "0.20"
+clap = { version = "4.5.40", features = ["derive", "env"] }
+colored = "3.0.0"
 dialoguer = "0.11"
 indicatif = "0.18.0"
-petgraph = "0.6"
+petgraph = "0.8.2"
 rayon = "1.10.0"
-serde_json = "1.0"
-thiserror = "2.0"
+serde_json = "1.0.140"
+thiserror = "2.0.12"
 
 [dev-dependencies]
 

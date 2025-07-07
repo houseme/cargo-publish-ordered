@@ -56,11 +56,9 @@ impl Workspace {
         for package in metadata.workspace_packages() {
             let from_idx = package_indices[&package.id];
             for dep in &package.dependencies {
-                if let Some(to_pkg) = metadata
-                    .packages
-                    .iter()
-                    .find(|p| p.name == dep.name && metadata.workspace_members.contains(&p.id))
-                {
+                if let Some(to_pkg) = metadata.packages.iter().find(|p| {
+                    p.name.to_string() == dep.name && metadata.workspace_members.contains(&p.id)
+                }) {
                     if let Some(&to_idx) = package_indices.get(&to_pkg.id) {
                         graph.add_edge(from_idx, to_idx, ());
                     }
