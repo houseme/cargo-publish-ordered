@@ -1,6 +1,6 @@
 use crate::error::Error;
 use colored::Colorize;
-use dialoguer::{theme::ColorfulTheme, Confirm};
+use dialoguer::{Confirm, theme::ColorfulTheme};
 use indicatif::{ProgressBar, ProgressStyle};
 use rayon::prelude::*;
 use std::process::Command;

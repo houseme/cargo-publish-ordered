@@ -16,6 +16,25 @@ pub enum Error {
     Dialog(dialoguer::Error),
     #[error("Cache serialization error:{0}")]
     Serialization(#[from] serde_json::Error),
+    #[error("Failed to read file `{path}`: {source}")]
+    FileRead {
+        path: String,
+        source: std::io::Error,
+    },
+    #[error("Failed to write to file `{path}`: {source}")]
+    FileWrite {
+        path: String,
+        source: std::io::Error,
+    },
+    #[error("Failed to parse TOML in `{path}`: {source}")]
+    TomlParse {
+        path: String,
+        source: toml_edit::TomlError,
+    },
+    #[error("Dependencies in `{path}` are not sorted")]
+    NotSorted { path: String },
+    #[error("Invalid sort order '{0}', must be 'asc' or 'desc'")]
+    InvalidSortOrder(String),
 }
 
 impl From<dialoguer::Error> for Error {

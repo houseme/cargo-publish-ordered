@@ -1,11 +1,11 @@
+use crate::CARGO_TOML_DEFAULT;
+use crate::error::Error;
 use cargo_metadata::{Metadata, MetadataCommand, PackageId};
 use petgraph::algo::toposort;
 use petgraph::graph::DiGraph;
 use std::collections::HashMap;
 use std::fs;
 use std::path::Path;
-
-use crate::error::Error;
 
 pub struct Workspace {
     pub metadata: Metadata,
@@ -15,7 +15,7 @@ pub struct Workspace {
 impl Workspace {
     /// Load workspace metadata and support caching.
     pub fn load(manifest_path: Option<&str>) -> Result<Metadata, Error> {
-        let manifest_path = manifest_path.unwrap_or("Cargo.toml");
+        let manifest_path = manifest_path.unwrap_or(CARGO_TOML_DEFAULT);
         let cache_path = Path::new(".cargo_publish_ordered_cache.json");
 
         let manifest_mtime = fs::metadata(manifest_path).and_then(|m| m.modified()).ok();

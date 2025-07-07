@@ -1,12 +1,25 @@
-use clap::Parser;
-
+use clap::{Parser, Subcommand};
 #[derive(Parser, Debug)]
 #[command(
     name = "cargo-publish-ordered",
     about = "Publish crates in workspaces in dependency order",
     version
 )]
-pub struct Cli {
+pub struct Args {
+    #[command(subcommand)]
+    pub command: Commands,
+}
+
+#[derive(Subcommand, Debug)]
+pub enum Commands {
+    /// Publish packages in the workspace in order
+    PublishOrdered(PublishOrderedArgs),
+    /// Sort dependencies in Cargo.toml alphabetically
+    DepSort(SortArgs),
+}
+
+#[derive(Parser, Debug)]
+pub struct PublishOrderedArgs {
     #[arg(long, help = "Simulate the release process, not actually executed")]
     pub dry_run: bool,
     #[arg(long, help = "Skip interactive confirmation")]
@@ -27,4 +40,23 @@ pub struct Cli {
         default_value = "crates-io"
     )]
     pub registry: String,
+}
+
+#[derive(Parser, Debug)]
+pub struct SortArgs {
+    /// Path to the Cargo.toml file to sort
+    #[arg(long, default_value = "Cargo.toml")]
+    pub path: String,
+    /// Check if the dependencies are sorted without writing changes
+    #[arg(long)]
+    pub check: bool,
+    /// Also sort the [workspace.dependencies] table
+    #[arg(long)]
+    pub workspace: bool,
+    /// Sort order: 'asc' or 'desc'
+    #[arg(long, default_value = "asc")]
+    pub order: String,
+    /// Show detailed logs
+    #[arg(long, short)]
+    pub verbose: bool,
 }
