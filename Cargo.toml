@@ -3,21 +3,26 @@ name = "cargo-publish-ordered"
 version = "0.1.0"
 edition = "2024"
 license = "Apache-2.0"
+authors = ["Houseme <housemecn@gmail.com>"]
 repository = "https://github.com/houseme/cargo-publish-ordered"
 rust-version = "1.85"
 homepage = "https://houseme.github.io/cargo-publish-ordered/"
 documentation = "https://docs.rs/cargo-publish-ordered/latest/cargo_publish_ordered/"
 description = "A Cargo plugin to ensure that dependencies are published in a specific order, useful for projects with interdependent crates."
+readme = "README.md"
 
 [dependencies]
 cargo_metadata = "0.18"
-clap = { version = "4.5", features = ["derive"] }
+clap = { version = "4.5", features = ["derive", "env"] }
 colored = "2.1"
 dialoguer = "0.11"
 indicatif = "0.18.0"
 petgraph = "0.6"
+rayon = "1.10.0"
+serde_json = "1.0"
 thiserror = "2.0"
 
+[dev-dependencies]
 
 [profile.release]
 opt-level = 3

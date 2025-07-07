@@ -2,6 +2,8 @@ use cargo_metadata::{Metadata, MetadataCommand, PackageId};
 use petgraph::algo::toposort;
 use petgraph::graph::DiGraph;
 use std::collections::HashMap;
+use std::fs;
+use std::path::Path;
 
 use crate::error::Error;
 
@@ -11,25 +13,46 @@ pub struct Workspace {
 }
 
 impl Workspace {
-    pub fn new(manifest_path: Option<&str>, exclude: &[String]) -> Result<Self, Error> {
-        // Get metadata
-        let mut cmd = MetadataCommand::new();
-        if let Some(path) = manifest_path {
-            cmd.manifest_path(path);
+    /// Load workspace metadata and support caching.
+    pub fn load(manifest_path: Option<&str>) -> Result<Metadata, Error> {
+        let manifest_path = manifest_path.unwrap_or("Cargo.toml");
+        let cache_path = Path::new(".cargo_publish_ordered_cache.json");
+
+        let manifest_mtime = fs::metadata(manifest_path).and_then(|m| m.modified()).ok();
+        let cache_mtime = fs::metadata(cache_path).and_then(|m| m.modified()).ok();
+
+        if let (Some(manifest_mtime), Some(cache_mtime)) = (manifest_mtime, cache_mtime) {
+            if cache_mtime > manifest_mtime {
+                if let Ok(cached) = fs::read_to_string(cache_path) {
+                    if let Ok(metadata) = serde_json::from_str(&cached) {
+                        return Ok(metadata);
+                    }
+                }
+            }
         }
+
+        let mut cmd = MetadataCommand::new();
+        cmd.manifest_path(manifest_path);
         let metadata = cmd.exec()?;
 
-        // Build dependency graph
+        if let Ok(json) = serde_json::to_string(&metadata) {
+            let _ = fs::write(cache_path, json);
+        }
+
+        Ok(metadata)
+    }
+
+    pub fn new(manifest_path: Option<&str>, exclude: &[String]) -> Result<Self, Error> {
+        let metadata = Self::load(manifest_path)?;
+
         let mut graph = DiGraph::<PackageId, ()>::new();
         let mut package_indices = HashMap::new();
 
-        // Add node (package in workspace)
         for package in metadata.workspace_packages() {
             let idx = graph.add_node(package.id.clone());
             package_indices.insert(package.id.clone(), idx);
         }
 
-        // Add edges (dependencies)
         for package in metadata.workspace_packages() {
             let from_idx = package_indices[&package.id];
             for dep in &package.dependencies {
@@ -45,7 +68,6 @@ impl Workspace {
             }
         }
 
-        // Topological sorting
         let publish_order = toposort(&graph, None)
             .map_err(|_| Error::CyclicDependency)?
             .into_iter()

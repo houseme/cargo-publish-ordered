@@ -16,6 +16,8 @@ before the packages that depend on them, avoiding publishing failures due to mis
   the packages that depend on them.
 * **Safe Dry Run**: Provides a `--dry-run` flag to preview the publishing commands and order without actually publishing
   to crates.io.
+* **Flexible Registry Support**: Allows specifying a target registry via the `--registry` flag, defaulting to
+  `crates-io` to avoid local configuration issues.
 * **Actual Publishing**: After verifying the order, it executes `cargo publish` commands to publish all packages.
 
 ## Installation
@@ -29,7 +31,7 @@ cargo install cargo-publish-ordered
 Alternatively, you can install from source:
 
 ```bash
-git clone https://github.com/houseme/cargo-publish-ordered.git # Please replace with your repository URL
+git clone https://github.com/houseme/cargo-publish-ordered.git
 cd cargo-publish-ordered
 cargo install --path .
 ```
@@ -48,10 +50,19 @@ cargo publish-ordered --dry-run
 
 ### Publishing
 
-After confirming the order is correct, execute the publish command. You may need to provide a crates.io token.
+After confirming the order is correct, execute the publish command. You may need to provide a crates.io token. By
+default, this tool publishes to `crates-io`.
 
 ```bash
 cargo publish-ordered --token ${CRATES_IO_TOKEN}
+```
+
+### Publishing to a different registry
+
+If you want to publish to an alternative registry (e.g., a private one), use the `--registry` flag:
+
+```bash
+cargo publish-ordered --token ${MY_REGISTRY_TOKEN} --registry my-private-registry
 ```
 
 ## Contributing

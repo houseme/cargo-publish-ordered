@@ -8,12 +8,14 @@ pub enum Error {
     Metadata(#[from] cargo_metadata::Error),
     #[error("Dependency graph contains loops")]
     CyclicDependency,
-    #[error("Cargo publish failed:{0}")]
-    Publish(String),
+    #[error("Cargo publish failed: crate {0}, error: {1}")]
+    Publish(String, String),
     #[error("User cancels publish")]
     UserCancelled,
     #[error("Invalid command line arguments: {0}")]
     Dialog(dialoguer::Error),
+    #[error("Cache serialization error:{0}")]
+    Serialization(#[from] serde_json::Error),
 }
 
 impl From<dialoguer::Error> for Error {

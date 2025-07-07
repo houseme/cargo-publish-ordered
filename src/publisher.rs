@@ -2,29 +2,52 @@ use crate::error::Error;
 use colored::Colorize;
 use dialoguer::{Confirm, theme::ColorfulTheme};
 use indicatif::{ProgressBar, ProgressStyle};
+use rayon::prelude::*;
 use std::process::Command;
+use std::sync::atomic::{AtomicUsize, Ordering};
+use std::time::Duration;
 
 pub struct Publisher {
     dry_run: bool,
     no_confirm: bool,
     token: Option<String>,
     allow_dirty: bool,
+    verbose: bool,
+    registry: String,
 }
 
 impl Publisher {
-    pub fn new(dry_run: bool, no_confirm: bool, token: Option<String>, allow_dirty: bool) -> Self {
+    pub fn new(
+        dry_run: bool,
+        no_confirm: bool,
+        token: Option<String>,
+        allow_dirty: bool,
+        verbose: bool,
+        registry: String,
+    ) -> Self {
         Publisher {
             dry_run,
             no_confirm,
             token,
             allow_dirty,
+            verbose,
+            registry,
         }
     }
 
     pub fn publish(&self, packages: &[&cargo_metadata::Package]) -> Result<(), Error> {
-        println!("{}", "Release order:".bold().green());
+        let pb = ProgressBar::new(packages.len() as u64);
+        pb.set_style(
+            ProgressStyle::default_bar()
+                .template(
+                    "{spinner:.green} [{elapsed_precise}] {bar:40.cyan/blue} {pos}/{len} {msg}",
+                )
+                .unwrap(),
+        );
+
+        pb.println(format!("{}", "Release order:".bold().green()));
         for pkg in packages {
-            println!("  - {} v{}", pkg.name, pkg.version);
+            pb.println(format!("  - {} v{}", pkg.name, pkg.version));
         }
 
         if !self.no_confirm && !self.dry_run {
@@ -36,49 +59,62 @@ impl Publisher {
             }
         }
 
-        let pb = ProgressBar::new(packages.len() as u64);
-        pb.set_style(
-            ProgressStyle::default_bar()
-                .template(
-                    "{spinner:.green} [{elapsed_precise}] {bar:40.cyan/blue} {pos}/{len} {msg}",
-                )
-                .unwrap(),
-        );
+        let success_count = AtomicUsize::new(0);
+        let results = packages
+            .par_iter()
+            .map(|&pkg| {
+                pb.set_message(format!("release {} v{}", pkg.name, pkg.version));
+                let mut cmd = Command::new("cargo");
+                cmd.arg("publish")
+                    .current_dir(pkg.manifest_path.parent().unwrap())
+                    .arg("--registry")
+                    .arg(&self.registry);
 
-        for pkg in packages {
-            pb.set_message(format!("release {} v{}", pkg.name, pkg.version));
-            let mut cmd = Command::new("cargo");
-            cmd.arg("publish")
-                .current_dir(pkg.manifest_path.parent().unwrap());
+                if self.dry_run {
+                    cmd.arg("--dry-run");
+                }
+                if self.allow_dirty {
+                    cmd.arg("--allow-dirty");
+                }
+                if let Some(token) = &self.token {
+                    cmd.arg("--token").arg(token);
+                }
 
-            if self.dry_run {
-                cmd.arg("--dry-run");
-            }
-            if self.allow_dirty {
-                cmd.arg("--allow-dirty");
-            }
-            if let Some(token) = &self.token {
-                cmd.arg("--token").arg(token);
-            }
+                if self.verbose {
+                    pb.println(format!("Execute the command:{cmd:?}"));
+                }
 
-            let output = cmd.output()?;
-            if output.status.success() {
-                pb.inc(1);
-                println!(
-                    "{} {} v{} {}",
-                    "Successfully released".bold().green(),
-                    pkg.name,
-                    pkg.version,
-                    if self.dry_run { "(Dry running)" } else { "" }
-                );
-            } else {
-                let stderr = String::from_utf8_lossy(&output.stderr);
-                pb.abandon_with_message(format!("Publish {} failed", pkg.name));
-                return Err(Error::Publish(stderr.to_string()));
-            }
-        }
+                let output = cmd.output()?;
+                if output.status.success() {
+                    success_count.fetch_add(1, Ordering::SeqCst);
+                    pb.inc(1);
+                    pb.println(format!(
+                        "{} {} v{} {}",
+                        "Successfully released".bold().green(),
+                        pkg.name,
+                        pkg.version,
+                        if self.dry_run { "(Dry running)" } else { "" }
+                    ));
+                    Ok(())
+                } else {
+                    let stderr = String::from_utf8_lossy(&output.stderr);
+                    pb.abandon_with_message(format!("Publish {} failed", pkg.name));
+                    Err(Error::Publish(pkg.name.clone(), stderr.to_string()))
+                }
+            })
+            .collect::<Vec<_>>();
 
         pb.finish_with_message("Release completed");
+
+        for result in results {
+            result?;
+        }
+
+        if !self.dry_run && success_count.load(Ordering::SeqCst) > 0 {
+            pb.println(format!("{}", "Wait for crates.io rate limit...".yellow()));
+            std::thread::sleep(Duration::from_secs(5));
+        }
+
         Ok(())
     }
 }
