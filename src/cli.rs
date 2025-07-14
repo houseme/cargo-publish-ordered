@@ -1,8 +1,8 @@
 use clap::{Parser, Subcommand};
 #[derive(Parser, Debug)]
 #[command(
-    name = "cargo-publish-ordered",
-    about = "Publish crates in workspaces in dependency order",
+    name = "publish-ordered",
+    about = "A tool to publish crates in workspaces in dependency order and sort dependencies.",
     version
 )]
 pub struct Args {
